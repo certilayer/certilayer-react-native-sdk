@@ -241,8 +241,13 @@ async function stop(): Promise<void> {
   }
   stopScreenTracking()
 
-  if (_flushing) await _flushing
-  await flush(true)
+  try {
+    if (_flushing) await _flushing
+    await flush(true)
+  } finally {
+    // skip if init() started a new session while we were flushing
+    if (!_running) _userId = ''
+  }
 }
 
 /** Internal — used by CertiLayerRoot. Same instance for the app's lifetime. */
