@@ -129,6 +129,39 @@ Returns the current session ID — send this to your backend (alongside
 `@certilayer/node` or another server SDK) to verify the session. Returns an
 empty string when no session is running.
 
+### `CertiLayer.setUserId(id: string | null): void`
+
+Tells CertiLayer which end user is signed in, so behavioral signals can be
+associated with a stable, pseudonymous identity.
+
+- Pass an **opaque, stable id from your own system** (for example an
+  internal user id). Never pass an email address or a phone number.
+- The value must be a non-empty string of at most 256 characters;
+  anything else is ignored.
+- `setUserId(null)` (or `''`) clears it.
+- It is held **in memory only**, never written to device storage, so call
+  it after every app launch once the user is known.
+- It applies to batches built after the call.
+
+```ts
+CertiLayer.init({ apiKey: 'certilayer_live_pk_xxx' })
+
+// after login (and after every launch while the user is signed in)
+CertiLayer.setUserId(currentUser.id)
+
+// on logout: end the session, clear the id, start a new session
+await CertiLayer.stop()
+CertiLayer.setUserId(null)
+CertiLayer.init({ apiKey: 'certilayer_live_pk_xxx' })
+```
+
+Always call `stop()` and then `init()` again on logout. Otherwise one
+session would contain the behavior of two different people.
+
+The id comes from the app, so CertiLayer treats it as a hint, and identity
+results are advisory. The gateway replaces the id with a keyed,
+per-organization hash before anything is stored.
+
 ### `CertiLayer.stop(): Promise<void>`
 
 Stops capture, clears the flush timer, and sends any remaining buffered

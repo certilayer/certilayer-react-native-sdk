@@ -53,4 +53,8 @@ export interface EventBatch {
   captured_at: string
   signals: RawSignal[]
   features: number[]
+  /** Hint only; the gateway validates it. */
+  device_class: 'mobile'
+  /** Opaque end-user id set via setUserId(); omitted when not set. */
+  user_id?: string
 }

@@ -45,6 +45,7 @@ let _flushTimer: ReturnType<typeof setInterval> | null = null
 let _appStateSub: { remove(): void } | null = null
 let _running = false
 let _sessionStartTs = 0
+let _userId = ''
 
 let _pending: PendingBatch | null = null // kept until the server confirms
 let _retryAt = 0
@@ -90,6 +91,8 @@ function buildBatch(signals: RawSignal[]): EventBatch {
     captured_at: new Date().toISOString(),
     signals,
     features: computeFeatureVector(signals, sessionDurationMs),
+    device_class: 'mobile',
+    ...(_userId ? { user_id: _userId } : {}),
   }
 }
 
@@ -200,6 +203,24 @@ function trackScreenFn(screenName: string): void {
   _trackScreen(screenName)
 }
 
+const MAX_USER_ID_LENGTH = 256
+
+/**
+ * Opaque, stable id of the signed-in end user. Memory only: never written to
+ * storage and never logged. Applies to batches built after the call.
+ */
+function setUserId(id: string | null): void {
+  if (id === null || id === '') {
+    _userId = ''
+    return
+  }
+  if (typeof id !== 'string' || id.trim() === '' || id.length > MAX_USER_ID_LENGTH) {
+    console.warn(`[CertiLayer] setUserId ignored: expected a non-empty string up to ${MAX_USER_ID_LENGTH} chars`)
+    return
+  }
+  _userId = id
+}
+
 /** Returns the current session ID, or '' when no session is running. */
 function getSessionId(): string {
   return _running ? _sessionId : ''
@@ -234,6 +255,7 @@ const CertiLayer = {
   init,
   trackScreen: trackScreenFn,
   getSessionId,
+  setUserId,
   stop,
 }
 
